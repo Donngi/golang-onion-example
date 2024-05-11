@@ -19,6 +19,9 @@ func StartServer() {
 	r.HandleFunc("/book/register", registerBookHandler).
 		Methods("POST")
 
+	r.HandleFunc("/book/{id}", getBookHandler).
+		Methods("GET")
+
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
@@ -48,15 +51,43 @@ func registerBookHandler(w http.ResponseWriter, r *http.Request) {
 
 	book, err := registerBookUseCase.Run(reqBody.Name, reqBody.Author)
 	if err != nil {
-		log.Fatalf("Failed to decode request body: %v", err)
+		log.Printf("Failed to register book: %v", err)
 		w.Write([]byte("Failed to register book"))
 		return
 	}
 
 	res, err := json.Marshal(book)
 	if err != nil {
-		log.Fatalf("Failed to marshal book: %v", err)
+		log.Printf("Failed to marshal book: %v", err)
 		w.Write([]byte("Successfully registered book"))
+		return
 	}
 	w.Write([]byte("Successfully registered book. Book: " + string(res)))
+}
+
+func getBookHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Receive GET/book/{id}")
+
+	vars := mux.Vars(r)
+
+	config, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	ddbClient := dynamodb.NewFromConfig(config)
+	repository := infrastructure.NewBookRepositoryImpl(ddbClient)
+	getBookUseCase := usecase.NewGetBookUseCase(repository)
+
+	book, err := getBookUseCase.Run(vars["id"])
+	if err != nil {
+		log.Printf("Failed to get book: %v", err)
+	}
+
+	res, err := json.Marshal(book)
+	if err != nil {
+		log.Printf("Failed to marshal book: %v", err)
+		w.Write([]byte("Failed to get book"))
+		return
+	}
+	w.Write([]byte(string(res)))
 }

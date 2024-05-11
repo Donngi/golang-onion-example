@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Donngi/golang-onion-example/domain"
@@ -37,7 +38,7 @@ func (repo *BookRepositoryImpl) Add(book *domain.Book) (*domain.Book, error) {
 		UpdatedAt: now,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("something occured at attributevalue.MarshalMap: %w", err)
 	}
 
 	res, err := repo.client.PutItem(context.TODO(), &dynamodb.PutItemInput{
@@ -45,7 +46,7 @@ func (repo *BookRepositoryImpl) Add(book *domain.Book) (*domain.Book, error) {
 		Item:      item,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("something occured while executiong DynamoDB PutItem: %w", err)
 	}
 
 	resItem := &BookTableItem{}
@@ -65,15 +66,20 @@ func (repo *BookRepositoryImpl) Get(id string) (*domain.Book, error) {
 	res, err := repo.client.GetItem(context.TODO(), &dynamodb.GetItemInput{
 		TableName: aws.String("Books"),
 		Key: map[string]types.AttributeValue{
-			id: &types.AttributeValueMemberS{
+			"id": &types.AttributeValueMemberS{
 				Value: id,
 			},
-		}})
+		},
+	})
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("something occured while executiong DynamoDB GetItem: %w", err)
+	}
+	if res.Item == nil {
+		return nil, fmt.Errorf("specified key not found in DynamoDB: %v", id)
 	}
 
-	resItem := BookTableItem{}
+	resItem := &BookTableItem{}
 	err = attributevalue.UnmarshalMap(res.Item, resItem)
 	if err != nil {
 		return nil, err
