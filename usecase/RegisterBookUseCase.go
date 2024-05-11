@@ -10,7 +10,11 @@ type RegisterBookUseCase struct {
 	repository domain.BookRepository
 }
 
-func (uc *RegisterBookUseCase) run(name string, author string) (*domain.Book, error) {
+func NewRegisterBookUseCase(repository domain.BookRepository) *RegisterBookUseCase {
+	return &RegisterBookUseCase{repository: repository}
+}
+
+func (uc *RegisterBookUseCase) Run(name string, author string) (*domain.Book, error) {
 	book, err := domain.NewBook(name, author)
 	if err != nil {
 		log.Fatalf("Failed to create book: %v", err)

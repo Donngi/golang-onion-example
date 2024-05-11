@@ -16,11 +16,11 @@ type BookRepositoryImpl struct {
 }
 
 type BookTableItem struct {
-	id        string `dynamodbav:"id"`
-	name      string `dynamodbav:"name"`
-	author    string `dynamodbav:"author"`
-	createdAt string `dynamodbav:"createdAt"`
-	updatedAt string `dynamodbav:"updatedAt"`
+	Id        string `dynamodbav:"id"`
+	Name      string `dynamodbav:"name"`
+	Author    string `dynamodbav:"author"`
+	CreatedAt string `dynamodbav:"createdAt"`
+	UpdatedAt string `dynamodbav:"updatedAt"`
 }
 
 func NewBookRepositoryImpl(client *dynamodb.Client) *BookRepositoryImpl {
@@ -28,13 +28,13 @@ func NewBookRepositoryImpl(client *dynamodb.Client) *BookRepositoryImpl {
 }
 
 func (repo *BookRepositoryImpl) Add(book *domain.Book) (*domain.Book, error) {
-	now := time.Now().String()
+	now := time.Now().Format(time.RFC3339)
 	item, err := attributevalue.MarshalMap(&BookTableItem{
-		id:        book.Id,
-		name:      book.Name,
-		author:    book.Author,
-		createdAt: now,
-		updatedAt: now,
+		Id:        book.Id,
+		Name:      book.Name,
+		Author:    book.Author,
+		CreatedAt: now,
+		UpdatedAt: now,
 	})
 	if err != nil {
 		return nil, err
@@ -48,16 +48,16 @@ func (repo *BookRepositoryImpl) Add(book *domain.Book) (*domain.Book, error) {
 		return nil, err
 	}
 
-	resItem := BookTableItem{}
+	resItem := &BookTableItem{}
 	err = attributevalue.UnmarshalMap(res.Attributes, resItem)
 	if err != nil {
 		return nil, err
 	}
 
 	return &domain.Book{
-		Id:     resItem.id,
-		Name:   resItem.name,
-		Author: resItem.author,
+		Id:     resItem.Id,
+		Name:   resItem.Name,
+		Author: resItem.Author,
 	}, nil
 }
 
@@ -80,8 +80,8 @@ func (repo *BookRepositoryImpl) Get(id string) (*domain.Book, error) {
 	}
 
 	return &domain.Book{
-		Id:     resItem.id,
-		Name:   resItem.name,
-		Author: resItem.author,
+		Id:     resItem.Id,
+		Name:   resItem.Name,
+		Author: resItem.Author,
 	}, nil
 }
